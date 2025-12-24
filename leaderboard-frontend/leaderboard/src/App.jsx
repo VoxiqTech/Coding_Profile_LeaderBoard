@@ -6,7 +6,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/leaderboard" element={<CodingLeaderboard />} />
+        <Route path="/" element={<CodingLeaderboard />} />
       </Routes>
     </Router>
   );

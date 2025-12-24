@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Code2, Award, Users, TrendingUp, Star, Github, ChevronRight } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000";
+// const API_BASE = "http://localhost:5000";
+const API_BASE = "https://coding-profile-leaderboard.onrender.com";
 
 export default function CodingLeaderboard() {
     const [users, setUsers] = useState([]);
