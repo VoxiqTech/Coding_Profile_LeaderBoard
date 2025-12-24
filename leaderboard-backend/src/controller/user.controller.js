@@ -4,12 +4,12 @@ import { fetchCodeforce } from '../service/codeforces.service.js'
 import { fetchleetcode } from '../service/leetcode.service.js'
 
 
-export async function addUser(req, res) { // Added req, res
+export async function addUser(req, res) {
     try {
         const { name, section, leetcodeUsername, codeforcesUsername } = req.body;
 
         const lc = await fetchleetcode(leetcodeUsername);
-        const cf = await fetchCodeforce(codeforcesUsername); // Fixed variable name from 'cc' to 'cf'
+        const cf = await fetchCodeforce(codeforcesUsername);
 
         const lcScore = calculateleetcodeScore(lc);
         const cfScore = calculateCodeForcesScore(cf);
@@ -25,7 +25,7 @@ export async function addUser(req, res) { // Added req, res
 
         res.json(user);
     } catch (err) {
-        // This catch block will now accurately report if it's a 11000 error
+        
         console.error(err);
         res.status(500).json({ message: err.message });
     }

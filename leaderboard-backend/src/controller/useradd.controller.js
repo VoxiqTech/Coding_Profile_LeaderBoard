@@ -17,7 +17,7 @@ export async function addUser(req, res) {
       codeforcesUsername
     } = req.body;
 
-    // ❌ basic validation
+  
     if (!section || section.trim() === "") {
       return res.status(400).json({ message: "Section is required" });
     }
@@ -28,7 +28,7 @@ export async function addUser(req, res) {
       });
     }
 
-    // ❌ duplicate check (manual, predictable)
+    
     const existingUser = await User.findOne({
       $or: [
         leetcodeUsername && { "leetcode.username": leetcodeUsername },
@@ -55,7 +55,7 @@ export async function addUser(req, res) {
       cfScore = calculateCodeForcesScore(cf);
     }
 
-    // ✅ CORE FEATURE
+    
     const totalSolved =
       (lc?.total || 0) +
       (cf?.solved || 0);
@@ -65,7 +65,7 @@ export async function addUser(req, res) {
       section,
       leetcode: lc ? { ...lc, score: lcScore } : undefined,
       codeforces: cf ? { ...cf, score: cfScore } : undefined,
-      totalSolved,                       // ✅ STORED
+      totalSolved,                       
       overallScore: lcScore + cfScore,
       lastUpdated: new Date()
     });

@@ -25,7 +25,6 @@ cron.schedule("0 0 * * *", async () => {
     u.leetcode = lc ? { ...lc, score: lcScore } : u.leetcode;
     u.codeforces = cf ? { ...cf, score: cfScore } : u.codeforces;
 
-    // ✅ KEEP TOTAL CONSISTENT
     u.totalSolved =
       (lc?.total || 0) +
       (cf?.solved || 0);
