@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coding Leaderboard</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    form, table {
+      background: #fff;
+      padding: 15px;
+      margin: 20px auto;
+      width: 80%;
+      border-radius: 6px;
+    }
+
+    input, button, select {
+      padding: 8px;
+      margin: 5px;
+      width: 30%;
+    }
+
+    button {
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+    }
+
+    table {
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background: #2563eb;
+      color: white;
+    }
+
+    .info {
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .section-filter {
+      text-align: center;
+      margin: 20px auto;
+      background: #fff;
+      padding: 15px;
+      width: 80%;
+      border-radius: 6px;
+    }
+
+    .section-filter button {
+      width: auto;
+      margin: 5px;
+      padding: 10px 20px;
+    }
+
+    .section-filter button.active {
+      background: #1d4ed8;
+    }
+
+    #customSectionInput {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🚀 Coding Leaderboard</h1>
+<p class="info">Leaderboard updates every 24 hours</p>
+
+<!-- ADD USER FORM -->
+<form id="addUserForm">
+  <h3>Add Your Profile</h3>
+
+  <input
+    type="text"
+    id="name"
+    placeholder="Name"
+    required
+  />
+
+  <select id="sectionSelect" required>
+    <option value="">Select Section</option>
+    <option value="1">Section 1</option>
+    <option value="2">Section 2</option>
+    <option value="3">Section 3</option>
+    <option value="other">Other Section</option>
+  </select>
+
+  <input
+    type="text"
+    id="customSectionInput"
+    placeholder="Enter your section (e.g., 4, 5, A)"
+  />
+
+  <input
+    type="text"
+    id="leetcode"
+    placeholder="LeetCode Username (optional)"
+  />
+
+  <input
+    type="text"
+    id="codeforces"
+    placeholder="Codeforces Username (optional)"
+  />
+
+  <br />
+  <button type="submit">Add User</button>
+</form>
+
+<!-- SECTION FILTER -->
+<div class="section-filter">
+  <h3>Filter by Section</h3>
+  <div id="sectionButtons">
+    <button class="section-btn active" data-section="all">All Sections</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD TABLE -->
+<table>
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>Name</th>
+      <th>Section</th>
+      <th>LC Solved</th>
+      <th>CF Solved</th>
+      <th>LC Score</th>
+      <th>CF Score</th>
+      <th>Overall Score</th>
+    </tr>
+  </thead>
+  <tbody id="leaderboardBody"></tbody>
+</table>
+
+<script>
+  const API_BASE = "http://localhost:5000";
+  let currentSection = 'all';
+
+  // SHOW/HIDE CUSTOM SECTION INPUT
+  document.getElementById('sectionSelect').addEventListener('change', (e) => {
+    const customInput = document.getElementById('customSectionInput');
+    if (e.target.value === 'other') {
+      customInput.style.display = 'inline-block';
+      customInput.required = true;
+    } else {
+      customInput.style.display = 'none';
+      customInput.required = false;
+      customInput.value = '';
+    }
+  });
+
+  // ADD USER
+  document.getElementById("addUserForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById("name").value.trim();
+    const sectionSelect = document.getElementById("sectionSelect").value;
+    
+    let section;
+    if (sectionSelect === 'other') {
+      section = document.getElementById("customSectionInput").value.trim();
+      if (!section) {
+        alert("Please enter your section");
+        return;
+      }
+    } else {
+      section = sectionSelect;
+    }
+
+    const leetcode = document.getElementById("leetcode").value.trim();
+    const codeforces = document.getElementById("codeforces").value.trim();
+
+    const payload = { name, section };
+
+    if (leetcode) payload.leetcodeUsername = leetcode;
+    if (codeforces) payload.codeforcesUsername = codeforces;
+
+    if (!payload.leetcodeUsername && !payload.codeforcesUsername) {
+      alert("Enter at least one platform username");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/users/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to add user");
+        return;
+      }
+
+      alert("User added successfully");
+      loadSections(); // Reload sections to include new one
+      loadLeaderboard(currentSection);
+      e.target.reset();
+      document.getElementById('customSectionInput').style.display = 'none';
+
+    } catch (err) {
+      alert("Server error");
+    }
+  });
+
+  // LOAD ALL SECTIONS
+  async function loadSections() {
+    try {
+      const res = await fetch(`${API_BASE}/api/leaderboard/sections`);
+      const sections = await res.json();
+
+      const container = document.getElementById('sectionButtons');
+      container.innerHTML = '<button class="section-btn active" data-section="all">All Sections</button>';
+
+      sections.forEach(section => {
+        const btn = document.createElement('button');
+        btn.className = 'section-btn';
+        btn.dataset.section = section;
+        btn.textContent = `Section ${section}`;
+        container.appendChild(btn);
+      });
+
+      // Add click handlers
+      document.querySelectorAll('.section-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.section-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentSection = btn.dataset.section;
+          loadLeaderboard(currentSection);
+        });
+      });
+
+    } catch (err) {
+      console.error("Failed to load sections:", err);
+    }
+  }
+
+  // LOAD LEADERBOARD
+  async function loadLeaderboard(section = 'all') {
+    const url = section === 'all' 
+      ? `${API_BASE}/api/leaderboard`
+      : `${API_BASE}/api/leaderboard?section=${section}`;
+    
+    const res = await fetch(url);
+    const users = await res.json();
+
+    const tbody = document.getElementById("leaderboardBody");
+    tbody.innerHTML = "";
+
+    users.forEach((u, i) => {
+      const row = `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${u.name}</td>
+          <td>Section ${u.section}</td>
+          <td>${u.leetcode?.total ?? 0}</td>
+          <td>${u.codeforces?.solved ?? 0}</td>
+          <td>${u.leetcode?.score ?? 0}</td>
+          <td>${u.codeforces?.score ?? 0}</td>
+          <td><b>${u.overallScore}</b></td>
+        </tr>
+      `;
+      tbody.innerHTML += row;
+    });
+  }
+  loadSections();
+  loadLeaderboard();
+</script>
+
+</body>
+</html>
