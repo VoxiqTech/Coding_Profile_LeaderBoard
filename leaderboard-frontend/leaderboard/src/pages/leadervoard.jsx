@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Code2, Award, Users, TrendingUp, Star, Github, ChevronRight } from 'lucide-react';
+import { Trophy, Code2, Award, Users, TrendingUp, Star, Github, ChevronRight, ExternalLink, Edit2, X, Save } from 'lucide-react';
 
 // const API_BASE = "http://localhost:5000";
 const API_BASE = "https://coding-profile-leaderboard.onrender.com";
@@ -9,6 +9,7 @@ export default function CodingLeaderboard() {
     const [sections, setSections] = useState([]);
     const [currentSection, setCurrentSection] = useState('all');
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         section: '',
@@ -92,6 +93,56 @@ export default function CodingLeaderboard() {
         }
     };
 
+    const handleEditClick = (user) => {
+        setEditingUser({
+            ...user,
+            originalSection: user.section,
+            sectionSelect: ['1', '2', '3'].includes(user.section) ? user.section : 'other'
+        });
+    };
+
+    const handleEditSave = async () => {
+        const section = editingUser.sectionSelect === 'other' ? editingUser.section : editingUser.sectionSelect;
+
+        if (!section) {
+            alert("Please select or enter a section");
+            return;
+        }
+
+        const payload = {
+            name: editingUser.name,
+            section
+        };
+
+        if (editingUser.leetcode?.username) payload.leetcodeUsername = editingUser.leetcode.username;
+        if (editingUser.codeforces?.username) payload.codeforcesUsername = editingUser.codeforces.username;
+
+        if (!payload.leetcodeUsername && !payload.codeforcesUsername) {
+            alert("At least one platform username is required");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/api/users/${editingUser._id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                alert(data.message || "Failed to update user");
+                return;
+            }
+
+            alert("Data Updated!");
+            setEditingUser(null);
+            loadLeaderboard(currentSection);
+        } catch (err) {
+            alert("Server error");
+        }
+    };
+
     const getRankStyle = (index) => {
         switch (index) {
             case 0: return 'from-yellow-400 to-orange-500 text-white shadow-yellow-200';
@@ -110,14 +161,12 @@ export default function CodingLeaderboard() {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 font-sans">
-
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse delay-700"></div>
             </div>
 
             <div className="max-w-7xl mx-auto relative z-10">
-
                 <div className="text-center mb-12">
                     <div className="flex items-center justify-center gap-3 mb-4">
                         <Code2 className="w-12 h-12 text-indigo-600" />
@@ -137,7 +186,6 @@ export default function CodingLeaderboard() {
                         onClick={() => setIsFormOpen(!isFormOpen)}
                         className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 transform hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
                     >
-
                         {isFormOpen ? 'Hame nahi Matlab-Banda Kar do Form' : 'Apna Level Jano -Join Karo'}
                     </button>
                 </div>
@@ -190,7 +238,7 @@ export default function CodingLeaderboard() {
                                     <label className="text-sm font-semibold text-slate-500 ml-1">LeetCode Username</label>
                                     <input
                                         type="text"
-                                        placeholder="leetcode_user"
+                                        placeholder="Ex: Divyansh2006"
                                         value={formData.leetcode}
                                         onChange={(e) => setFormData({ ...formData, leetcode: e.target.value })}
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
@@ -201,7 +249,7 @@ export default function CodingLeaderboard() {
                                     <label className="text-sm font-semibold text-slate-500 ml-1">Codeforces Username</label>
                                     <input
                                         type="text"
-                                        placeholder="cf_handle"
+                                        placeholder="Ex: Divyansh_cf"
                                         value={formData.codeforces}
                                         onChange={(e) => setFormData({ ...formData, codeforces: e.target.value })}
                                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
@@ -218,6 +266,107 @@ export default function CodingLeaderboard() {
                         </div>
                     </div>
                 )}
+
+                {editingUser && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                    <Edit2 className="w-6 h-6 text-indigo-600" />
+                                    Edit Profile
+                                </h3>
+                                <button
+                                    onClick={() => setEditingUser(null)}
+                                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-semibold text-slate-500 ml-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.name}
+                                            onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-semibold text-slate-500 ml-1">Academic Section</label>
+                                        <select
+                                            value={editingUser.sectionSelect}
+                                            onChange={(e) => setEditingUser({ ...editingUser, sectionSelect: e.target.value })}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
+                                        >
+                                            <option value="">Select Section</option>
+                                            <option value="1">Section 1</option>
+                                            <option value="2">Section 2</option>
+                                            <option value="3">Section 3</option>
+                                            <option value="other">Other Section</option>
+                                        </select>
+                                    </div>
+
+                                    {editingUser.sectionSelect === 'other' && (
+                                        <input
+                                            type="text"
+                                            placeholder="Enter your section name"
+                                            value={editingUser.section}
+                                            onChange={(e) => setEditingUser({ ...editingUser, section: e.target.value })}
+                                            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
+                                        />
+                                    )}
+
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-semibold text-slate-500 ml-1">LeetCode Username</label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.leetcode?.username || ''}
+                                            onChange={(e) => setEditingUser({
+                                                ...editingUser,
+                                                leetcode: { ...editingUser.leetcode, username: e.target.value }
+                                            })}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-sm font-semibold text-slate-500 ml-1">Codeforces Username</label>
+                                        <input
+                                            type="text"
+                                            value={editingUser.codeforces?.username || ''}
+                                            onChange={(e) => setEditingUser({
+                                                ...editingUser,
+                                                codeforces: { ...editingUser.codeforces, username: e.target.value }
+                                            })}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 transition-all outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={handleEditSave}
+                                        className="flex-1 px-6 py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transform hover:scale-[1.01] transition-all duration-300 flex items-center justify-center gap-2"
+                                    >
+                                        <Save className="w-5 h-5" />
+                                        Save Changes
+                                    </button>
+                                    <button
+                                        onClick={() => setEditingUser(null)}
+                                        className="px-6 py-4 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all duration-300"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="mb-8 bg-white/70 backdrop-blur-md border border-white rounded-3xl p-4 shadow-sm">
                     <div className="flex flex-wrap justify-center gap-2">
                         <button
@@ -243,7 +392,6 @@ export default function CodingLeaderboard() {
                         ))}
                     </div>
                 </div>
-
 
                 <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl shadow-slate-200/50">
                     <div className="overflow-x-auto">
@@ -271,7 +419,15 @@ export default function CodingLeaderboard() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">{user.name}</div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleEditClick(user)}
+                                                    className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors hover:underline flex items-center gap-1"
+                                                >
+                                                    {user.name}
+                                                    <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">
@@ -279,18 +435,51 @@ export default function CodingLeaderboard() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="text-slate-700 font-bold">{user.leetcode?.total ?? 0}</div>
-                                            <div className="text-[10px] text-emerald-600 font-bold">Score: {user.leetcode?.score ?? 0}</div>
+                                            {user.leetcode?.username ? (
+                                                <a
+                                                    href={`https://leetcode.com/${user.leetcode.username}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex flex-col items-center group/link hover:bg-emerald-50 px-3 py-2 rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-1 text-slate-700 font-bold group-hover/link:text-emerald-700">
+                                                        {user.leetcode?.total ?? 0}
+                                                        <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                                    </div>
+                                                    <div className="text-[10px] text-emerald-600 font-bold">Score: {user.leetcode?.score ?? 0}</div>
+                                                </a>
+                                            ) : (
+                                                <div>
+                                                    <div className="text-slate-700 font-bold">0</div>
+                                                    <div className="text-[10px] text-slate-400 font-bold">N/A</div>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="text-slate-700 font-bold">{user.codeforces?.solved ?? 0}</div>
-                                            <div className="text-[10px] text-blue-600 font-bold">Score: {user.codeforces?.score ?? 0}</div>
+                                            {user.codeforces?.username ? (
+                                                <a
+                                                    href={`https://codeforces.com/profile/${user.codeforces.username}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex flex-col items-center group/link hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-1 text-slate-700 font-bold group-hover/link:text-blue-700">
+                                                        {user.codeforces?.solved ?? 0}
+                                                        <ExternalLink className="w-3 h-3 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                                                    </div>
+                                                    <div className="text-[10px] text-blue-600 font-bold">Score: {user.codeforces?.score ?? 0}</div>
+                                                </a>
+                                            ) : (
+                                                <div>
+                                                    <div className="text-slate-700 font-bold">0</div>
+                                                    <div className="text-[10px] text-slate-400 font-bold">N/A</div>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="text-slate-900 font-extrabold text-lg">
                                                 {user.totalSolved ?? 0}
                                             </div>
-                                           
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-1">
