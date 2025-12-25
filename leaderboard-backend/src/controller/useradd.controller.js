@@ -13,6 +13,7 @@ export async function addUser(req, res) {
     const {
       name,
       section,
+      password,
       leetcodeUsername,
       codeforcesUsername
     } = req.body;
@@ -63,6 +64,7 @@ export async function addUser(req, res) {
     const user = await User.create({
       name,
       section,
+      password,
       leetcode: lc ? { ...lc, score: lcScore } : undefined,
       codeforces: cf ? { ...cf, score: cfScore } : undefined,
       totalSolved,                       
