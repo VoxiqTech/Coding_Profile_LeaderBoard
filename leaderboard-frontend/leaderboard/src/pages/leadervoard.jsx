@@ -5,7 +5,9 @@ import { RegistrationForm } from './RegistrationForm';
 import { LeaderboardTable } from './LeaderboardTable';
 import { EditModal } from './EditModal';
 
-const API_BASE = "http://localhost:5000";
+// const API_BASE = "http://localhost:5000";
+const API_BASE = "https://coding-profile-leaderboard.onrender.com";
+
 
 export default function CodingLeaderboard() {
   const [users, setUsers] = useState([]);
