@@ -7,7 +7,7 @@ import User from "../models/User.model.js";
 import { calculateCodeForcesScore, calculateleetcodeScore } from "./scoring.utils.js";
 
 
-cron.schedule("0 /5 * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   const users = await User.find();
 
   for (const u of users) {
