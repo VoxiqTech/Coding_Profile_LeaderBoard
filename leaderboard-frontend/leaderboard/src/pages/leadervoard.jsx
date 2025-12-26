@@ -5,8 +5,8 @@ import { RegistrationForm } from './RegistrationForm';
 import { LeaderboardTable } from './LeaderboardTable';
 import { EditModal } from './EditModal';
 
-// const API_BASE = "http://localhost:5000";
-const API_BASE = "https://coding-profile-leaderboard.onrender.com";
+const API_BASE = "http://localhost:5000";
+// const API_BASE = "https://coding-profile-leaderboard.onrender.com";
 
 
 export default function CodingLeaderboard() {
@@ -15,8 +15,9 @@ export default function CodingLeaderboard() {
   const [currentSection, setCurrentSection] = useState('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({ 
-    name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: '' 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: ''
   });
 
   useEffect(() => {
@@ -24,6 +25,39 @@ export default function CodingLeaderboard() {
     loadLeaderboard('all');
   }, []);
 
+
+ const handleRefresh = async () => {
+  setIsRefreshing(true);
+  try {
+    console.log("Calling refresh API...");
+    const res = await fetch(`${API_BASE}/api/leaderboard/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    
+    console.log("Response status:", res.status);
+    const data = await res.json();
+    console.log("Response data:", data);
+
+    if (!res.ok) {
+      throw new Error(data.message || `Server error: ${res.status}`);
+    }
+
+    await loadLeaderboard(currentSection);
+    
+    if (data.failed > 0) {
+      alert(`Refresh partially completed!\n Success: ${data.success}\n Failed: ${data.failed}\n\nCheck console for details.`);
+      console.error("Failed updates:", data.errors);
+    } else {
+      alert(`Leaderboard refreshed successfully!\nUpdated ${data.success} users`);
+    }
+  } catch (err) {
+    console.error("Refresh error:", err);
+    alert(` Refresh failed!\n\nError: ${err.message}\n\nCheck browser console for details.`);
+  } finally {
+    setIsRefreshing(false);
+  }
+};
   const loadSections = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/leaderboard/sections`);
@@ -59,9 +93,9 @@ export default function CodingLeaderboard() {
       return;
     }
 
-    const payload = { 
-      name: formData.name, 
-      section, 
+    const payload = {
+      name: formData.name,
+      section,
       password: formData.password,
       leetcodeUsername: formData.leetcode,
       codeforcesUsername: formData.codeforces
@@ -145,16 +179,27 @@ export default function CodingLeaderboard() {
         )}
 
         <div className="mb-8 flex flex-wrap justify-center gap-2">
-          <button 
-            onClick={() => handleSectionChange('all')} 
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`px-6 py-2 rounded-xl font-bold transition-all ${isRefreshing
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+              } text-white`}
+          >
+            {isRefreshing ? 'Refreshing...' : ' Refresh'}
+          </button>
+
+          <button
+            onClick={() => handleSectionChange('all')}
             className={`px-6 py-2 rounded-xl font-bold transition-all ${currentSection === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
             All Users
           </button>
           {sections.map(s => (
-            <button 
-              key={s} 
-              onClick={() => handleSectionChange(s)} 
+            <button
+              key={s}
+              onClick={() => handleSectionChange(s)}
               className={`px-6 py-2 rounded-xl font-bold transition-all ${currentSection === s ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
             >
               Sec {s}
@@ -162,20 +207,20 @@ export default function CodingLeaderboard() {
           ))}
         </div>
 
-        <LeaderboardTable 
-          users={users} 
-          onEditClick={handleEditClick} 
-          getRankStyle={getRankStyle} 
-          getRankIcon={getRankIcon} 
+        <LeaderboardTable
+          users={users}
+          onEditClick={handleEditClick}
+          getRankStyle={getRankStyle}
+          getRankIcon={getRankIcon}
         />
       </div>
 
       {editingUser && (
-        <EditModal 
-          user={editingUser} 
-          setUser={setEditingUser} 
-          onSave={handleEditSave} 
-          onClose={() => setEditingUser(null)} 
+        <EditModal
+          user={editingUser}
+          setUser={setEditingUser}
+          onSave={handleEditSave}
+          onClose={() => setEditingUser(null)}
         />
       )}
     </div>
