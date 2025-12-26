@@ -1,5 +1,3 @@
-// Cron jo hai wo ekk automatic scheduler function hai jo given par automatic update karta hai given task, ye node-cron mai aaya jata aur ye 2 chej leta hai ekk time, dusara callback function...time mai wo apne minute,hrs,day month year ke hisab se kamm leta hai 
-
 import cron from 'node-cron'
 import { fetchCodeforce } from "../service/codeforces.service.js";
 import { fetchleetcode } from "../service/leetcode.service.js";
@@ -7,33 +5,54 @@ import User from "../models/User.model.js";
 import { calculateCodeForcesScore, calculateleetcodeScore } from "./scoring.utils.js";
 
 
-cron.schedule("0 0 * * *", async () => {
-  const users = await User.find();
+cron.schedule("0 /2 * * *", async () => {
+  try {
+    const users = await User.find();
+    console.log(`Starting leaderboard update for ${users.length} users...`);
 
-  for (const u of users) {
-    const lc = u.leetcode?.username
-      ? await fetchleetcode(u.leetcode.username)
-      : null;
+    for (const u of users) {
+      try {
+        let lc = null;
+        let cf = null;
+        let lcScore = 0;
+        let cfScore = 0;
 
-    const cf = u.codeforces?.username
-      ? await fetchCodeforce(u.codeforces.username)
-      : null;
+        if (u.leetcode?.username) {
+          lc = await fetchleetcode(u.leetcode.username);
+          lcScore = lc ? calculateleetcodeScore(lc) : 0;
+        }
 
-    const lcScore = lc ? calculateleetcodeScore(lc) : 0;
-    const cfScore = cf ? calculateCodeForcesScore(cf) : 0;
+        if (u.codeforces?.username) {
+          cf = await fetchCodeforce(u.codeforces.username);
+          cfScore = cf ? calculateCodeForcesScore(cf) : 0;
+        }
 
-    u.leetcode = lc ? { ...lc, score: lcScore } : u.leetcode;
-    u.codeforces = cf ? { ...cf, score: cfScore } : u.codeforces;
+        const totalSolved = (lc?.total || 0) + (cf?.solved || 0);
 
-    u.totalSolved =
-      (lc?.total || 0) +
-      (cf?.solved || 0);
+        const updateData = {
+          totalSolved,
+          overallScore: lcScore + cfScore,
+          lastUpdated: new Date()
+        };
 
-    u.overallScore = lcScore + cfScore;
-    u.lastUpdated = new Date();
+        if (lc) {
+          updateData.leetcode = { ...lc, score: lcScore };
+        }
 
-    await u.save();
+        if (cf) {
+          updateData.codeforces = { ...cf, score: cfScore };
+        }
+
+        await User.findByIdAndUpdate(u._id, updateData, { runValidators: false });
+        
+        console.log(`Updated user: ${u.name}`);
+      } catch (userError) {
+        console.error(`Error updating user ${u.name}:`, userError.message);
+      }
+    }
+
+    console.log("Leaderboard update completed successfully");
+  } catch (error) {
+    console.error("Critical error in leaderboard update:", error);
   }
-
-  console.log("Leaderboard updated");
 });
