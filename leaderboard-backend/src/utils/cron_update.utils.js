@@ -5,7 +5,7 @@ import User from "../models/User.model.js";
 import { calculateCodeForcesScore, calculateleetcodeScore } from "./scoring.utils.js";
 
 
-cron.schedule("0 /2 * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   try {
     const users = await User.find();
     console.log(`Starting leaderboard update for ${users.length} users...`);
