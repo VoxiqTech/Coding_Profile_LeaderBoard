@@ -57,7 +57,26 @@ export const LeaderboardTable = ({ users, onEditClick, getRankStyle, getRankIcon
                 <td className="px-6 py-4 text-center">
                   <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase">Sec {user.section}</span>
                 </td>
-                <SolvedCell platform="leetcode" username={user.leetcode?.username} total={user.leetcode?.total} score={user.leetcode?.score} url={`https://leetcode.com/${user.leetcode?.username}`} />
+                <td className="px-6 py-4 text-center">
+                      {user.leetcode ? (
+                        <div>
+                          <a
+                            href={`https://leetcode.com/${user.leetcode.username}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-600 hover:text-orange-700 font-semibold flex items-center justify-center gap-1"
+                          >
+                            {user.leetcode.total}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <div className="text-xs text-slate-500 mt-1">
+                            E:{user.leetcode.easy} M:{user.leetcode.medium} H:{user.leetcode.hard}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
                 <SolvedCell platform="codeforces" username={user.codeforces?.username} total={user.codeforces?.solved} score={user.codeforces?.score} url={`https://codeforces.com/profile/${user.codeforces?.username}`} />
                 <td className="px-6 py-4 text-center font-extrabold text-lg text-slate-900">{user.totalSolved ?? 0}</td>
                 <td className="px-6 py-4 text-center">
@@ -66,6 +85,7 @@ export const LeaderboardTable = ({ users, onEditClick, getRankStyle, getRankIcon
                     <ChevronRight className="w-4 h-4 text-slate-300" />
                   </div>
                 </td>
+                
               </tr>
             ))}
           </tbody>

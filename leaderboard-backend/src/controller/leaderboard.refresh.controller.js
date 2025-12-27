@@ -3,8 +3,50 @@ import { fetchleetcode } from "../service/leetcode.service.js";
 import { fetchCodeforce } from "../service/codeforces.service.js";
 import { calculateleetcodeScore, calculateCodeForcesScore } from "../utils/scoring.utils.js";
 
+let lastRefreshTime = null;
+
+export async function getRefreshStatus(req, res) {
+  try {
+    const now = Date.now();
+    const canRefresh = !lastRefreshTime || (now - lastRefreshTime) >= 24 * 60 * 60 * 1000;
+    
+    let timeRemaining = null;
+    if (!canRefresh) {
+      const timeElapsed = now - lastRefreshTime;
+      timeRemaining = 24 * 60 * 60 * 1000 - timeElapsed;
+    }
+
+    res.json({
+      canRefresh,
+      lastRefreshTime,
+      timeRemaining,
+      nextRefreshAvailable: lastRefreshTime ? new Date(lastRefreshTime + 24 * 60 * 60 * 1000) : null
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 export async function refreshLeaderboard(req, res) {
   try {
+    const now = Date.now();
+    const cooldownPeriod = 24 * 60 * 60 * 1000; 
+
+    if (lastRefreshTime && (now - lastRefreshTime) < cooldownPeriod) {
+      const timeRemaining = cooldownPeriod - (now - lastRefreshTime);
+      const hoursRemaining = Math.floor(timeRemaining / (60 * 60 * 1000));
+      const minutesRemaining = Math.floor((timeRemaining % (60 * 60 * 1000)) / (60 * 1000));
+      
+      return res.status(429).json({ 
+        message: "Refresh is on cooldown",
+        canRefresh: false,
+        timeRemaining,
+        hoursRemaining,
+        minutesRemaining,
+        nextRefreshAvailable: new Date(lastRefreshTime + cooldownPeriod)
+      });
+    }
+
     const users = await User.find();
     let successCount = 0;
     let errorCount = 0;
@@ -49,11 +91,15 @@ export async function refreshLeaderboard(req, res) {
       }
     }
 
+    lastRefreshTime = now;
+
     res.json({ 
       message: "Leaderboard refresh completed",
       success: successCount,
       failed: errorCount,
-      total: users.length
+      total: users.length,
+      canRefresh: false,
+      nextRefreshAvailable: new Date(now + cooldownPeriod)
     });
 
   } catch (err) {

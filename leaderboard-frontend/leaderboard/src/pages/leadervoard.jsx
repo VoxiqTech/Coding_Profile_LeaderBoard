@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Award, Star } from 'lucide-react';
+import { Trophy, Award, Star, RefreshCw } from 'lucide-react';
 import { LeaderboardHeader } from './LeaderboardHeader';
 import { RegistrationForm } from './RegistrationForm';
 import { LeaderboardTable } from './LeaderboardTable';
 import { EditModal } from './EditModal';
 
-// const API_BASE = "http://localhost:5000";
-const API_BASE = "https://coding-profile-leaderboard.onrender.com";
-
+const API_BASE = "http://localhost:5000";
+// const API_BASE = "https://coding-profile-leaderboard-exjt.onrender.com";
 
 export default function CodingLeaderboard() {
   const [users, setUsers] = useState([]);
@@ -16,6 +15,8 @@ export default function CodingLeaderboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [canRefresh, setCanRefresh] = useState(true);
+  const [refreshStatus, setRefreshStatus] = useState(null);
   const [formData, setFormData] = useState({
     name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: ''
   });
@@ -23,41 +24,75 @@ export default function CodingLeaderboard() {
   useEffect(() => {
     loadSections();
     loadLeaderboard('all');
+    checkRefreshStatus();
+    
+    // Check refresh status every minute
+    const interval = setInterval(checkRefreshStatus, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-
- const handleRefresh = async () => {
-  setIsRefreshing(true);
-  try {
-    console.log("Calling refresh API...");
-    const res = await fetch(`${API_BASE}/api/leaderboard/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" }
-    });
-    
-    console.log("Response status:", res.status);
-    const data = await res.json();
-    console.log("Response data:", data);
-
-    if (!res.ok) {
-      throw new Error(data.message || `Server error: ${res.status}`);
+  const checkRefreshStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/leaderboard/refresh-status`);
+      const data = await res.json();
+      setCanRefresh(data.canRefresh);
+      setRefreshStatus(data);
+    } catch (err) {
+      console.error("Failed to check refresh status:", err);
     }
+  };
 
-    await loadLeaderboard(currentSection);
+  const getRefreshMessage = () => {
+    if (canRefresh) return "Refresh Leaderboard";
     
-    if (data.failed > 0) {
-      alert(`Refresh partially completed!\n Success: ${data.success}\n Failed: ${data.failed}\n\nCheck console for details.`);
-      console.error("Failed updates:", data.errors);
-    } else {
-      alert(`Leaderboard refreshed successfully!\nUpdated ${data.success} users`);
+    if (refreshStatus?.timeRemaining) {
+      const hours = Math.floor(refreshStatus.timeRemaining / (60 * 60 * 1000));
+      const minutes = Math.floor((refreshStatus.timeRemaining % (60 * 60 * 1000)) / (60 * 1000));
+      return `Refreshed recently. Available in ${hours}h ${minutes}m`;
     }
-  } catch (err) {
-    console.error("Refresh error:", err);
-    alert(` Refresh failed!\n\nError: ${err.message}\n\nCheck browser console for details.`);
-  } finally {
-    setIsRefreshing(false);
-  }
-};
+    
+    return "Refresh done today";
+  };
+
+  const handleRefresh = async () => {
+    if (!canRefresh) return;
+    
+    setIsRefreshing(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/leaderboard/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          alert(`⏰ Refresh is on cooldown!\n\nPlease wait ${data.hoursRemaining}h ${data.minutesRemaining}m before refreshing again.`);
+          setCanRefresh(false);
+          setRefreshStatus(data);
+          return;
+        }
+        throw new Error(data.message || `Server error: ${res.status}`);
+      }
+
+      await loadLeaderboard(currentSection);
+      setCanRefresh(false);
+      setRefreshStatus(data);
+      
+      if (data.failed > 0) {
+        alert(`Refresh partially completed!\nSuccess: ${data.success}\nFailed: ${data.failed}`);
+      } else {
+        alert(`✅ Leaderboard refreshed successfully!\nUpdated ${data.success} users\n\nNext refresh available in 24 hours.`);
+      }
+    } catch (err) {
+      console.error("Refresh error:", err);
+      alert(`❌ Refresh failed!\n\nError: ${err.message}`);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const loadSections = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/leaderboard/sections`);
@@ -124,7 +159,7 @@ export default function CodingLeaderboard() {
     setEditingUser({
       ...user,
       sectionSelect: ['1', '2', '3'].includes(user.section) ? user.section : 'other',
-      password: '' // Reset password field for security
+      password: ''
     });
   };
 
@@ -181,18 +216,23 @@ export default function CodingLeaderboard() {
         <div className="mb-8 flex flex-wrap justify-center gap-2">
           <button
             onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`px-6 py-2 rounded-xl font-bold transition-all ${isRefreshing
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700'
-              } text-white`}
+            disabled={isRefreshing || !canRefresh}
+            className={`px-6 py-2 rounded-xl font-bold transition-all flex items-center gap-2 ${
+              isRefreshing || !canRefresh
+                ? 'bg-gray-400 cursor-not-allowed text-white'
+                : 'bg-green-600 hover:bg-green-700 text-white shadow-lg'
+            }`}
+            title={canRefresh ? "Click to refresh all user data" : getRefreshMessage()}
           >
-            {isRefreshing ? 'Refreshing...' : ' Refresh'}
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : getRefreshMessage()}
           </button>
 
           <button
             onClick={() => handleSectionChange('all')}
-            className={`px-6 py-2 rounded-xl font-bold transition-all ${currentSection === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+            className={`px-6 py-2 rounded-xl font-bold transition-all ${
+              currentSection === 'all' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'
+            }`}
           >
             All Users
           </button>
@@ -200,7 +240,9 @@ export default function CodingLeaderboard() {
             <button
               key={s}
               onClick={() => handleSectionChange(s)}
-              className={`px-6 py-2 rounded-xl font-bold transition-all ${currentSection === s ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+              className={`px-6 py-2 rounded-xl font-bold transition-all ${
+                currentSection === s ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-100'
+              }`}
             >
               Sec {s}
             </button>
