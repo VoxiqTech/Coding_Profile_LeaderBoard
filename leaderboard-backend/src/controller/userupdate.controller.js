@@ -13,7 +13,7 @@ export async function updateUser(req, res) {
         const {
             name,
             section,
-            password,  
+            password,
             leetcodeUsername,
             codeforcesUsername,
             gfgUsername,
@@ -33,8 +33,8 @@ export async function updateUser(req, res) {
             });
         }
 
-        const user = await User.findById(id);
-        
+        const user = await User.findById(id).select('+password');
+
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -96,7 +96,7 @@ export async function updateUser(req, res) {
 
         const totalSolved =
             (lc?.total || 0) +
-            (cf?.solved || 0) + 
+            (cf?.solved || 0) +
             (gfgs?.total_problems_solved || 0);
 
         const updatedUser = await User.findByIdAndUpdate(
@@ -108,7 +108,7 @@ export async function updateUser(req, res) {
                 codeforces: cf ? { ...cf, score: cfScore } : null,
                 gfg: gfgs ? { ...gfgs, score: gfgScore } : null,
                 totalSolved,
-                overallScore: lcScore + cfScore + gfgScore ,
+                overallScore: lcScore + cfScore + gfgScore,
                 lastUpdated: new Date()
             },
             { new: true }
