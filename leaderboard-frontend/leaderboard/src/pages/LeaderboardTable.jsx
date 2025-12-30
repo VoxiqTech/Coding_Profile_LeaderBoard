@@ -126,7 +126,7 @@ export const LeaderboardTable = ({ users, onEditClick, getRankStyle, getRankIcon
                   {user.gfg ? (
                     <div>
                       <a
-                        href={`https://api-gamma-ecru.vercel.app/gfg/${user.gfg.username}`}
+                        href={`https://www.geeksforgeeks.org/profile/${user.gfg.username}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-orange-600 hover:text-orange-700 font-semibold flex items-center justify-center gap-1"

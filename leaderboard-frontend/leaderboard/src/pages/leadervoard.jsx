@@ -7,7 +7,7 @@ import { EditModal } from './EditModal';
 
 
 // const API_BASE ="http://localhost:5000";
-const API_BASE = import.meta.env.REACT_APP_API_BASE || "http://localhost:5000";
+const API_BASE = "https://coding-profile-leaderboard-exjt.onrender.com";
 
 export default function CodingLeaderboard() {
   const [users, setUsers] = useState([]);

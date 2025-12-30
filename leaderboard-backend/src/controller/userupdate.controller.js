@@ -104,9 +104,9 @@ export async function updateUser(req, res) {
             {
                 name,
                 section,
-                leetcode: lc ? { ...lc, score: lcScore } : undefined,
-                codeforces: cf ? { ...cf, score: cfScore } : undefined,
-                gfg: gfgs ? { ...gfgs, score: gfgScore } : undefined,
+                leetcode: lc ? { ...lc, score: lcScore } : null,
+                codeforces: cf ? { ...cf, score: cfScore } : null,
+                gfg: gfgs ? { ...gfgs, score: gfgScore } : null,
                 totalSolved,
                 overallScore: lcScore + cfScore + gfgScore ,
                 lastUpdated: new Date()
