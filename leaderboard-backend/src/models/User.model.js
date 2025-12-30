@@ -60,7 +60,8 @@ gfg:{
   },
   password:{
    type: String,
-    required: true
+    required: true,
+    select: false
   },
 
   lastUpdated: {
