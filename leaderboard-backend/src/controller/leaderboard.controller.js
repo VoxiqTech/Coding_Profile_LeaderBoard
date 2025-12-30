@@ -11,6 +11,7 @@ export async function getLeaderboard(req, res) {
     }
 
     const users = await User.find(query)
+      .select('-password -__v')
       .sort({ overallScore: -1 })
       .lean();
 
