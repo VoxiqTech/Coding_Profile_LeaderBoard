@@ -1,11 +1,11 @@
-
-
 import User from "../models/User.model.js";
 import { fetchleetcode } from "../service/leetcode.service.js";
 import { fetchCodeforce } from "../service/codeforces.service.js";
+import { fetchgfg } from "../service/gfg.service.js";
 import {
   calculateleetcodeScore,
-  calculateCodeForcesScore
+  calculateCodeForcesScore,
+ calculategfgScore,
 } from "../utils/scoring.utils.js";
 
 export async function addUser(req, res) {
@@ -15,7 +15,8 @@ export async function addUser(req, res) {
       section,
       password,
       leetcodeUsername,
-      codeforcesUsername
+      codeforcesUsername,
+      gfgUsername,
     } = req.body;
 
   
@@ -23,7 +24,7 @@ export async function addUser(req, res) {
       return res.status(400).json({ message: "Section is required" });
     }
 
-    if (!leetcodeUsername && !codeforcesUsername) {
+    if (!leetcodeUsername && !codeforcesUsername && !gfgUsername) {
       return res.status(400).json({
         message: "At least one platform username is required"
       });
@@ -33,7 +34,8 @@ export async function addUser(req, res) {
     const existingUser = await User.findOne({
       $or: [
         leetcodeUsername && { "leetcode.username": leetcodeUsername },
-        codeforcesUsername && { "codeforces.username": codeforcesUsername }
+        codeforcesUsername && { "codeforces.username": codeforcesUsername },
+        gfgUsername && {"gfg.username" : gfgUsername},
       ].filter(Boolean)
     });
 
@@ -43,8 +45,10 @@ export async function addUser(req, res) {
 
     let lc = null;
     let cf = null;
+    let gfgs=  null;
     let lcScore = 0;
     let cfScore = 0;
+    let gfgScore = 0;
 
     if (leetcodeUsername) {
       lc = await fetchleetcode(leetcodeUsername);
@@ -56,10 +60,17 @@ export async function addUser(req, res) {
       cfScore = calculateCodeForcesScore(cf);
     }
 
+    if(gfgUsername){
+      gfgs = await fetchgfg(gfgUsername);
+      gfgScore = calculategfgScore(gfgs);
+    }
+
     
     const totalSolved =
       (lc?.total || 0) +
-      (cf?.solved || 0);
+      (cf?.solved || 0)+
+      (gfgs?.total_problems_solved || 0);
+
 
     const user = await User.create({
       name,
@@ -67,8 +78,9 @@ export async function addUser(req, res) {
       password,
       leetcode: lc ? { ...lc, score: lcScore } : undefined,
       codeforces: cf ? { ...cf, score: cfScore } : undefined,
+      gfg: gfgs ? {...gfgs, score:gfgScore}: undefined,
       totalSolved,                       
-      overallScore: lcScore + cfScore,
+      overallScore: lcScore + cfScore + gfgScore,
       lastUpdated: new Date()
     });
 

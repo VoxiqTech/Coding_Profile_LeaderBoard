@@ -24,6 +24,8 @@ export const RegistrationForm = ({ formData, setFormData, onSubmit }) => (
           <option value="1">Section 1</option>
           <option value="2">Section 2</option>
           <option value="3">Section 3</option>
+          <option value="3">Section 4</option>
+          <option value="3">Section 5</option>
           <option value="other">Other Section</option>
         </select>
         {formData.sectionSelect === 'other' && (
@@ -47,6 +49,13 @@ export const RegistrationForm = ({ formData, setFormData, onSubmit }) => (
           placeholder="Codeforces Username"
           value={formData.codeforces}
           onChange={(e) => setFormData({ ...formData, codeforces: e.target.value })}
+          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
+        />
+        <input
+          type="text"
+          placeholder="GFG Username"
+          value={formData.gfg}
+          onChange={(e) => setFormData({ ...formData, gfg: e.target.value })}
           className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none"
         />
         <div className="md:col-span-2 space-y-1">

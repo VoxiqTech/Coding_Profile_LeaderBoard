@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export async function fetchleetcode(username) {
-  console.log("🔥 USING UPDATED fetchleetcode FUNCTION");
+  // console.log("🔥 USING UPDATED fetchleetcode FUNCTION");
 
   const res = await axios.get(
     `https://coding-profile-service.onrender.com/stats?leetcode=${username}`,
@@ -12,7 +12,7 @@ export async function fetchleetcode(username) {
     }
   );
 
-  console.log("🔍 RAW res.data:", res.data);
+  // console.log("🔍 RAW res.data:", res.data);
 
   if (!res.data || !res.data.profiles || !res.data.profiles[0]) {
     throw new Error("Invalid LeetCode API response");

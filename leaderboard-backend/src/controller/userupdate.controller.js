@@ -1,9 +1,10 @@
 import User from "../models/User.model.js";
 import { fetchleetcode } from "../service/leetcode.service.js";
 import { fetchCodeforce } from "../service/codeforces.service.js";
+import { fetchgfg } from "../service/gfg.service.js";
 import {
     calculateleetcodeScore,
-    calculateCodeForcesScore
+    calculateCodeForcesScore, calculategfgScore
 } from "../utils/scoring.utils.js";
 
 export async function updateUser(req, res) {
@@ -12,9 +13,10 @@ export async function updateUser(req, res) {
         const {
             name,
             section,
-            password,  // Added this
+            password,  
             leetcodeUsername,
-            codeforcesUsername
+            codeforcesUsername,
+            gfgUsername,
         } = req.body;
 
         if (!section || section.trim() === "") {
@@ -25,7 +27,7 @@ export async function updateUser(req, res) {
             return res.status(400).json({ message: "Password is required" });
         }
 
-        if (!leetcodeUsername && !codeforcesUsername) {
+        if (!leetcodeUsername && !codeforcesUsername && !gfgUsername) {
             return res.status(400).json({
                 message: "At least one platform username is required"
             });
@@ -37,29 +39,31 @@ export async function updateUser(req, res) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Check password FIRST before doing anything else
         if (password !== user.password) {
-            return res.status(401).json({ message: "Incorrect password!" });
+            return res.status(401).json({ message: "Incorrect password!Dont't change Someone's Profile" });
         }
 
         const existingUser = await User.findOne({
             _id: { $ne: id },
             $or: [
                 leetcodeUsername && { "leetcode.username": leetcodeUsername },
-                codeforcesUsername && { "codeforces.username": codeforcesUsername }
+                codeforcesUsername && { "codeforces.username": codeforcesUsername },
+                gfgUsername && { "gfg.username": gfgUsername }
             ].filter(Boolean)
         });
 
         if (existingUser) {
             return res.status(409).json({
-                message: "Username already taken by another user"
+                message: "User exists"
             });
         }
 
         let lc = null;
         let cf = null;
+        let gfgs = null;
         let lcScore = 0;
         let cfScore = 0;
+        let gfgScore = 0;
 
         if (leetcodeUsername) {
             if (user.leetcode?.username !== leetcodeUsername) {
@@ -80,10 +84,20 @@ export async function updateUser(req, res) {
                 cfScore = user.codeforces.score || 0;
             }
         }
+        if (gfgUsername) {
+            if (user.gfg?.username !== gfgUsername) {
+                gfgs = await fetchgfg(gfgUsername);
+                gfgScore = calculategfgScore(gfgs);
+            } else {
+                gfgs = user.gfg;
+                gfgScore = user.gfg.score || 0;
+            }
+        }
 
         const totalSolved =
             (lc?.total || 0) +
-            (cf?.solved || 0);
+            (cf?.solved || 0) + 
+            (gfgs?.total_problems_solved || 0);
 
         const updatedUser = await User.findByIdAndUpdate(
             id,
@@ -92,8 +106,9 @@ export async function updateUser(req, res) {
                 section,
                 leetcode: lc ? { ...lc, score: lcScore } : undefined,
                 codeforces: cf ? { ...cf, score: cfScore } : undefined,
+                gfg: gfgs ? { ...gfgs, score: gfgScore } : undefined,
                 totalSolved,
-                overallScore: lcScore + cfScore,
+                overallScore: lcScore + cfScore + gfgScore ,
                 lastUpdated: new Date()
             },
             { new: true }

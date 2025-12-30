@@ -5,8 +5,9 @@ import { RegistrationForm } from './RegistrationForm';
 import { LeaderboardTable } from './LeaderboardTable';
 import { EditModal } from './EditModal';
 
-// const API_BASE = "http://localhost:5000";
-const API_BASE = "https://coding-profile-leaderboard-exjt.onrender.com";
+
+// const API_BASE ="http://localhost:5000";
+const API_BASE = import.meta.env.REACT_APP_API_BASE || "http://localhost:5000";
 
 export default function CodingLeaderboard() {
   const [users, setUsers] = useState([]);
@@ -25,8 +26,7 @@ export default function CodingLeaderboard() {
     loadSections();
     loadLeaderboard('all');
     checkRefreshStatus();
-    
-    // Check refresh status every minute
+  
     const interval = setInterval(checkRefreshStatus, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -68,7 +68,7 @@ export default function CodingLeaderboard() {
 
       if (!res.ok) {
         if (res.status === 429) {
-          alert(`⏰ Refresh is on cooldown!\n\nPlease wait ${data.hoursRemaining}h ${data.minutesRemaining}m before refreshing again.`);
+          alert(` Refresh is on cooldown!\n\nPlease wait ${data.hoursRemaining}h ${data.minutesRemaining}m before refreshing again.`);
           setCanRefresh(false);
           setRefreshStatus(data);
           return;
@@ -83,11 +83,11 @@ export default function CodingLeaderboard() {
       if (data.failed > 0) {
         alert(`Refresh partially completed!\nSuccess: ${data.success}\nFailed: ${data.failed}`);
       } else {
-        alert(`✅ Leaderboard refreshed successfully!\nUpdated ${data.success} users\n\nNext refresh available in 24 hours.`);
+        alert(` Leaderboard refreshed successfully!\nUpdated ${data.success} users\n\nNext refresh available in 24 hours.`);
       }
     } catch (err) {
       console.error("Refresh error:", err);
-      alert(`❌ Refresh failed!\n\nError: ${err.message}`);
+      alert(` Refresh failed!\n\nError: ${err.message}`);
     } finally {
       setIsRefreshing(false);
     }
@@ -123,7 +123,7 @@ export default function CodingLeaderboard() {
 
   const handleSubmit = async () => {
     const section = formData.sectionSelect === 'other' ? formData.section : formData.sectionSelect;
-    if (!section || !formData.password || (!formData.leetcode && !formData.codeforces)) {
+    if (!section || !formData.password || (!formData.leetcode && !formData.codeforces && !formData.gfg)) {
       alert("Please fill in all required fields (Name, Section, Password, and at least one Username)");
       return;
     }
@@ -133,7 +133,8 @@ export default function CodingLeaderboard() {
       section,
       password: formData.password,
       leetcodeUsername: formData.leetcode,
-      codeforcesUsername: formData.codeforces
+      codeforcesUsername: formData.codeforces,
+      gfgUsername:formData.gfg
     };
 
     try {
@@ -146,7 +147,7 @@ export default function CodingLeaderboard() {
       if (!res.ok) throw new Error(data.message || "Failed to add user");
 
       alert("User added successfully!");
-      setFormData({ name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: '' });
+      setFormData({ name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', gfg:'', password: '' });
       setIsFormOpen(false);
       loadSections();
       loadLeaderboard(currentSection);
@@ -158,7 +159,7 @@ export default function CodingLeaderboard() {
   const handleEditClick = (user) => {
     setEditingUser({
       ...user,
-      sectionSelect: ['1', '2', '3'].includes(user.section) ? user.section : 'other',
+      sectionSelect: ['1', '2', '3','4','5'].includes(user.section) ? user.section : 'other',
       password: ''
     });
   };
@@ -170,7 +171,8 @@ export default function CodingLeaderboard() {
       section,
       password: editingUser.password,
       leetcodeUsername: editingUser.leetcode?.username,
-      codeforcesUsername: editingUser.codeforces?.username
+      codeforcesUsername: editingUser.codeforces?.username,
+      gfgUsername: editingUser.gfg?.username
     };
 
     try {
@@ -198,9 +200,9 @@ export default function CodingLeaderboard() {
   };
 
   const getRankIcon = (index) => {
-    if (index === 0) return <Trophy className="w-5 h-5" />;
-    if (index === 1) return <Award className="w-5 h-5" />;
-    if (index === 2) return <Star className="w-5 h-5" />;
+    if (index === 0) return <h1>1</h1>;
+    if (index === 1) return <h1>2</h1>;
+    if (index === 2) return <h1>3</h1>;
     return <span className="font-bold">{index + 1}</span>;
   };
 

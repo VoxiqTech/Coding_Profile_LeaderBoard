@@ -16,12 +16,12 @@ mongoose.connect(process.env.MONGO_DB_ANTARA_AI)
 
 const app = express();
 
-// app.use(cors());
 app.use(cors({
-    origin: 'https://coding-profile-leaderboard.netlify.app',
+    origin: ['https://coding-profile-leaderboard.netlify.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
+
 app.use(express.json());
 
 app.use("/api/leaderboard", leaderboardRoutes);

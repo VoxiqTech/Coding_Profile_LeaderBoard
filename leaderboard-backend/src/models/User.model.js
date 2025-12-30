@@ -36,6 +36,19 @@ codeforces: {
   rating: Number,
   score: Number
 },
+gfg:{
+  username:{
+    type:String,
+    unique:true,
+    sparse:true,
+  },
+  total_problems_solved:Number,
+  basic:Number,
+  easy: Number,
+  medium: Number,
+  hard: Number,
+  score: Number
+},
 
  totalSolved: {
     type: Number,
