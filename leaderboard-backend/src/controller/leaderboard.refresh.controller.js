@@ -1,7 +1,8 @@
 import User from "../models/User.model.js";
 import { fetchleetcode } from "../service/leetcode.service.js";
 import { fetchCodeforce } from "../service/codeforces.service.js";
-import { calculateleetcodeScore, calculateCodeForcesScore } from "../utils/scoring.utils.js";
+import { fetchgfg } from "../service/gfg.service.js";
+import { calculateleetcodeScore, calculateCodeForcesScore, calculategfgScore } from "../utils/scoring.utils.js";
 
 let lastRefreshTime = null;
 
@@ -53,24 +54,32 @@ export async function refreshLeaderboard(req, res) {
 
     for (const u of users) {
       try {
-        let lc = null, cf = null;
-        let lcScore = 0, cfScore = 0;
+        let lc = null, cf = null, gfgs = null;
+        let lcScore = 0, cfScore = 0, gfgScore = 0;
 
+        // Fetch LeetCode data
         if (u.leetcode?.username) {
           lc = await fetchleetcode(u.leetcode.username);
           lcScore = lc ? calculateleetcodeScore(lc) : 0;
         }
 
+        // Fetch CodeForces data
         if (u.codeforces?.username) {
           cf = await fetchCodeforce(u.codeforces.username);
           cfScore = cf ? calculateCodeForcesScore(cf) : 0;
         }
 
-        const totalSolved = (lc?.total || 0) + (cf?.solved || 0);
+        // Fetch GFG data
+        if (u.gfg?.username) {
+          gfgs = await fetchgfg(u.gfg.username);
+          gfgScore = gfgs ? calculategfgScore(gfgs) : 0;
+        }
+
+        const totalSolved = (lc?.total || 0) + (cf?.solved || 0) + (gfgs?.total_problems_solved || 0);
 
         const updateData = {
           totalSolved,
-          overallScore: lcScore + cfScore,
+          overallScore: lcScore + cfScore + gfgScore,
           lastUpdated: new Date()
         };
 
@@ -80,6 +89,10 @@ export async function refreshLeaderboard(req, res) {
 
         if (cf) {
           updateData.codeforces = { ...cf, score: cfScore };
+        }
+
+        if (gfgs) {
+          updateData.gfg = { ...gfgs, score: gfgScore };
         }
 
         await User.findByIdAndUpdate(u._id, updateData, { runValidators: false });

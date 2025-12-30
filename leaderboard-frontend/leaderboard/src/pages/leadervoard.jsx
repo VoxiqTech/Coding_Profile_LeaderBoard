@@ -19,7 +19,7 @@ export default function CodingLeaderboard() {
   const [canRefresh, setCanRefresh] = useState(true);
   const [refreshStatus, setRefreshStatus] = useState(null);
   const [formData, setFormData] = useState({
-    name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: ''
+    name: '', section: '', sectionSelect: '', leetcode: '', codeforces: '', password: '', gfg: ''
   });
 
   useEffect(() => {
